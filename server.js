@@ -58,7 +58,7 @@ app.use(routes);
 
 // Inicializa o servidor quando o banco estiver conectado
 app.on('pronto', () => {
-  const porta = 3000;
+  const porta = 3001;
   app.listen(porta, () => {
     console.log(`Servidor rodando em http://localhost:${porta}`);
   });
