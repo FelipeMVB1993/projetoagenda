@@ -3,7 +3,7 @@ name: Deploy automático
 on:
   push:
     branches:
-      - main  # branch que dispara o deploy
+      - main
 
 jobs:
   deploy:
@@ -19,15 +19,13 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H 18.119.192.186 >> ~/.ssh/known_hosts
-        shell: bash
 
-      - name: Deploy no servidor via SSH
+      - name: Deploy no servidor
         run: |
           ssh -i ~/.ssh/id_rsa ubuntu@18.119.192.186 << 'EOF'
-            cd /var/www/felipedev.website || exit 1
+            cd ~/projetoagenda || exit 1
             git pull origin main
             npm install
             npm run build
-            pm2 restart app || true
+            pm2 restart app || pm2 start npm --name "app" -- start
           EOF
-        shell: bash
