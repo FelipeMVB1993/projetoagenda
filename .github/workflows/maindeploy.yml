@@ -1,8 +1,9 @@
-name: Deploy automático na AWS via SSH
+name: Deploy automático
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main  # branch que dispara o deploy
 
 jobs:
   deploy:
@@ -15,18 +16,18 @@ jobs:
       - name: Configurar chave SSH
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H 18.119.192.186 >> ~/.ssh/known_hosts
         shell: bash
 
-      - name: Conectar e fazer deploy
+      - name: Deploy no servidor via SSH
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=yes ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} << 'EOF'
+          ssh -i ~/.ssh/id_rsa ubuntu@18.119.192.186 << 'EOF'
             cd /var/www/felipedev.website || exit 1
             git pull origin main
             npm install
             npm run build
-            pm2 restart app  # Descomente se usar PM2 para reiniciar o app
+            pm2 restart app || true
           EOF
         shell: bash
