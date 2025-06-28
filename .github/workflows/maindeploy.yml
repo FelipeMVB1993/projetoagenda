@@ -1,31 +1,56 @@
+# Nome do workflow que aparece na aba "Actions" do GitHub
 name: Deploy automático
 
+# Define que esse workflow será executado automaticamente
+# sempre que houver um push para a branch "main"
 on:
   push:
     branches:
       - main
 
 jobs:
+  # Define o nome do job (conjunto de passos)
   deploy:
+    # Define o ambiente onde os passos vão rodar — neste caso, um container Ubuntu mais recente
     runs-on: ubuntu-latest
 
     steps:
+      # Primeiro passo: faz o checkout do código do repositório para a máquina do runner
       - name: Checkout do código
         uses: actions/checkout@v3
 
+      # Segundo passo: prepara o ambiente SSH para se conectar ao servidor
       - name: Configurar chave SSH
-        run: |
+        run: | # O símbolo "|" indica que os comandos abaixo são um bloco de shell script
+          # Cria a pasta ~/.ssh se ainda não existir
           mkdir -p ~/.ssh
+          
+          # Salva a chave privada que está no Secret SSH_PRIVATE_KEY no arquivo ~/.ssh/id_rsa
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          
+          # Define permissão 600 (somente leitura/escrita do dono) para a chave
           chmod 600 ~/.ssh/id_rsa
+          
+          # Adiciona o servidor ao known_hosts para evitar o prompt de "yes/no" ao conectar
           ssh-keyscan -H 18.119.192.186 >> ~/.ssh/known_hosts
 
+      # Terceiro passo: conecta via SSH ao servidor e executa os comandos de deploy
       - name: Deploy no servidor
         run: |
+          # Abre uma conexão SSH e executa os comandos entre EOF e EOF no servidor remoto
           ssh -i ~/.ssh/id_rsa ubuntu@18.119.192.186 << 'EOF'
+            # Acessa o diretório onde está seu projeto no servidor
             cd ~/projetoagenda || exit 1
+            
+            # Atualiza o código do projeto com a branch main
             git pull origin main
+            
+            # Instala as dependências do projeto (Node.js)
             npm install
+            
+            # Compila o projeto (build de produção)
             npm run build
+            
+            # Reinicia o processo com PM2 se ele já estiver rodando, senão inicia o processo com nome "app"
             pm2 restart app || pm2 start npm --name "app" -- start
           EOF
